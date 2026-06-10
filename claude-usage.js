@@ -89,7 +89,7 @@ function parseCreds(text) {
   const accessToken = o.accessToken || o.access_token || null;
   const refreshToken = o.refreshToken || o.refresh_token;
   if (!refreshToken) {
-    throw new Error("no refresh token found — copy the contents of ~/.claude/.credentials.json");
+    throw new Error("no refresh token found — copy the full contents of your .claude/.credentials.json file");
   }
   let expiresAt = Number(o.expiresAt || o.expires_at) || 0;
   if (!expiresAt && o.expires_in) expiresAt = Date.now() + o.expires_in * 1000;
@@ -376,7 +376,7 @@ async function buildWidget(family) {
       return messageWidget("setup needed", "open scriptable, run this script, and paste your claude credentials");
     }
     if (e.code === "AUTH") {
-      return messageWidget("re-auth needed", "token refresh failed — re-paste credentials from ~/.claude/.credentials.json");
+      return messageWidget("re-auth needed", "token refresh failed — re-paste credentials from .claude/.credentials.json");
     }
     state = loadCachedUsage();
     if (!state) {
@@ -392,7 +392,7 @@ async function pasteCredentials() {
   const intro = new Alert();
   intro.title = "paste credentials";
   intro.message =
-    "on a machine where claude code is logged in, copy the contents of ~/.claude/.credentials.json to your clipboard, then continue.";
+    "on the machine where claude code is logged in, copy the contents of the credentials file to your clipboard, then continue.\n\nwindows: %USERPROFILE%\\.claude\\.credentials.json\nmac/linux: ~/.claude/.credentials.json";
   intro.addAction("read clipboard");
   intro.addCancelAction("cancel");
   if ((await intro.presentAlert()) === -1) return;

@@ -20,9 +20,14 @@ All credentials are stored in the iOS Keychain via Scriptable's `Keychain` API, 
 
 **Prerequisite:** a Claude subscription (Pro/Max) that you've used to log in to Claude Code on any computer.
 
-1. **Get your credentials.** On a machine where Claude Code is logged in, copy the contents of the credentials file to your clipboard:
-   - macOS/Linux: `cat ~/.claude/.credentials.json | pbcopy` (or just open the file and copy it)
-   - Send it to your phone however you like (AirDrop a note, iCloud clipboard via Handoff, etc.) and copy it on the phone
+1. **Get your credentials.** On the machine where Claude Code is logged in, copy the contents of the credentials file to your clipboard:
+   - **Windows:** in PowerShell run
+     ```powershell
+     Get-Content "$env:USERPROFILE\.claude\.credentials.json" -Raw | Set-Clipboard
+     ```
+     (the file is at `C:\Users\<you>\.claude\.credentials.json`; if you run Claude Code inside WSL, it's in your WSL home instead: `wsl cat ~/.claude/.credentials.json | clip`)
+   - **macOS/Linux:** `cat ~/.claude/.credentials.json | pbcopy` (or open the file and copy it)
+   - Get it to your iPhone however you like — email it to yourself, a notes/messaging app you have on both devices, etc. — then copy it on the phone. Delete the message afterwards; it's a credential.
 2. **Install [Scriptable](https://apps.apple.com/app/scriptable/id1405459188)** from the App Store.
 3. **Create the script.** In Scriptable, tap **+**, paste the contents of [`claude-usage.js`](claude-usage.js), and name it `claude-usage`.
 4. **Run it once** (tap the play button). Choose **paste credentials**, then **read clipboard**. You should see "saved". Use **test fetch** to confirm it works.
@@ -50,7 +55,7 @@ Edit the `CONFIG` block at the top of the script:
 
 ## Troubleshooting
 
-- **"fetch failed: AUTH"** — your refresh token was rotated or revoked. Re-copy `~/.claude/.credentials.json` (log in to Claude Code again if needed) and re-paste.
+- **"fetch failed: AUTH"** — your refresh token was rotated or revoked. Re-copy the credentials file (log in to Claude Code again if needed) and re-paste.
 - **Notifications don't appear** — allow notifications for Scriptable in iOS Settings, and note alerts only fire when the widget refreshes in the background.
 - **Widget feels stale** — iOS throttles widget refreshes; tapping the widget opens claude.ai, and re-adding the widget forces a refresh.
 
@@ -61,4 +66,4 @@ Edit the `CONFIG` block at the top of the script:
 
 ## Security note
 
-Your credentials grant access to your Claude account — treat `~/.claude/.credentials.json` like a password. The script keeps them in the iOS Keychain and only ever sends them to `anthropic.com` endpoints. Clear them anytime via the script's **clear stored data** menu option.
+Your credentials grant access to your Claude account — treat the credentials file like a password. The script keeps them in the iOS Keychain and only ever sends them to `anthropic.com` endpoints. Clear them anytime via the script's **clear stored data** menu option.
