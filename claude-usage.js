@@ -13,6 +13,7 @@ const CONFIG = {
   notifyAt: 90,         // % that triggers a "near limit" notification (once per window)
   resetNotifyAbove: 75, // schedule a "limit reset" notification if usage was above this %
   refreshMinutes: 5,    // requested widget refresh interval (iOS decides the real one)
+  tapAction: "refresh", // "refresh" = tap shows fresh usage in scriptable, "claude" = tap opens claude.ai
 };
 
 const CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
@@ -292,7 +293,10 @@ function addUsageRow(stack, label, win, barWidth) {
 function newWidget() {
   const widget = new ListWidget();
   widget.backgroundColor = PALETTE.bg;
-  widget.url = "https://claude.ai";
+  widget.url =
+    CONFIG.tapAction === "claude"
+      ? "https://claude.ai"
+      : `scriptable:///run/${encodeURIComponent(Script.name())}?action=refresh`;
   widget.refreshAfterDate = new Date(Date.now() + CONFIG.refreshMinutes * 60000);
   return widget;
 }
@@ -405,20 +409,47 @@ async function pasteCredentials() {
   }
 }
 
-async function testFetch() {
+async function showQuickStatus() {
+  let state;
+  let note = null;
   try {
-    const { data } = await getUsage();
-    const lines = [];
-    const add = (label, w) => {
-      if (w) lines.push(`${label}: ${Math.round(w.utilization)}%${w.resetsAt ? ` (resets in ${formatCountdown(w.resetsAt)})` : ""}`);
-    };
-    add("session", data.session);
-    add("week", data.week);
-    add("week opus", data.weekOpus);
-    await showInfo("fetch ok", lines.join("\n"));
+    state = await getUsage();
+    await handleNotifications(state.data);
   } catch (e) {
-    await showInfo("fetch failed", `${e.code || "ERROR"}: ${e.message}`);
+    if (e.code === "SETUP") {
+      await runApp();
+      return;
+    }
+    state = loadCachedUsage();
+    if (!state) {
+      await showInfo("fetch failed", `${e.code || "ERROR"}: ${e.message}`);
+      return;
+    }
+    note =
+      e.code === "AUTH"
+        ? "token refresh failed — re-paste credentials"
+        : "offline — showing cached data";
   }
+  const lines = [];
+  const add = (label, w) => {
+    if (!w) return;
+    let line = `${label}: ${Math.round(w.utilization)}% used`;
+    if (w.resetsAt) line += `\nresets in ${formatCountdown(w.resetsAt)} (${formatTime(w.resetsAt)})`;
+    lines.push(line);
+  };
+  add("session (5h)", state.data.session);
+  add("week", state.data.week);
+  add("week opus", state.data.weekOpus);
+  if (note) lines.push(`⚠️ ${note} — data as of ${formatTime(state.fetchedAt)}`);
+  const a = new Alert();
+  a.title = note ? "claude usage (cached)" : "claude usage";
+  a.message = lines.join("\n\n");
+  a.addAction("refresh");
+  a.addAction("open claude.ai");
+  a.addCancelAction("done");
+  const choice = await a.presentAlert();
+  if (choice === 0) await showQuickStatus();
+  if (choice === 1) Safari.open("https://claude.ai");
 }
 
 async function showInfo(title, message) {
@@ -436,7 +467,7 @@ async function runApp() {
     menu.title = "claude usage widget";
     menu.message = hasCreds ? "credentials stored ✓" : "no credentials stored yet — start with setup";
     menu.addAction(hasCreds ? "re-paste credentials" : "paste credentials");
-    menu.addAction("test fetch");
+    menu.addAction("show usage");
     menu.addAction("preview small widget");
     menu.addAction("preview medium widget");
     menu.addDestructiveAction("clear stored data");
@@ -444,7 +475,7 @@ async function runApp() {
     const choice = await menu.presentSheet();
     if (choice === -1) break;
     if (choice === 0) await pasteCredentials();
-    if (choice === 1) await testFetch();
+    if (choice === 1) await showQuickStatus();
     if (choice === 2) await (await buildWidget("small")).presentSmall();
     if (choice === 3) await (await buildWidget("medium")).presentMedium();
     if (choice === 4) {
@@ -460,6 +491,8 @@ async function runApp() {
 
 if (config.runsInWidget) {
   Script.setWidget(await buildWidget());
+} else if (args.queryParameters && args.queryParameters.action === "refresh") {
+  await showQuickStatus();
 } else {
   await runApp();
 }

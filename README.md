@@ -48,6 +48,11 @@ Edit the `CONFIG` block at the top of the script:
 | `notifyAt` | `90` | % that triggers a near-limit notification (once per window) |
 | `resetNotifyAbove` | `75` | schedule a "limit reset" notification if usage was above this % |
 | `refreshMinutes` | `5` | requested widget refresh interval |
+| `tapAction` | `"refresh"` | what tapping the widget does: `"refresh"` shows a fresh usage readout, `"claude"` opens claude.ai |
+
+## Tap to refresh
+
+iOS decides when the widget image redraws (typically every 15–30 minutes), so the displayed numbers can lag — especially right after a limit resets. Tapping the widget works around this: it opens Scriptable, fetches your usage live, and shows a popup with current session/week percentages and exact reset times. The fetch also updates the cache, so the widget image itself catches up on its next scheduled redraw.
 
 ## Widget states
 
@@ -59,7 +64,7 @@ Edit the `CONFIG` block at the top of the script:
 
 - **"fetch failed: AUTH"** — your refresh token was rotated or revoked. Re-copy the credentials file (log in to Claude Code again if needed) and re-paste.
 - **Notifications don't appear** — allow notifications for Scriptable in iOS Settings, and note alerts only fire when the widget refreshes in the background.
-- **Widget feels stale** — iOS throttles widget refreshes; tapping the widget opens claude.ai, and re-adding the widget forces a refresh.
+- **Widget feels stale** — iOS throttles widget refreshes; tap the widget for live numbers, and re-adding the widget forces a redraw.
 
 ## Caveats
 
