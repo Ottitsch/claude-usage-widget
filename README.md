@@ -32,7 +32,7 @@ All credentials are stored in the iOS Keychain via Scriptable's `Keychain` API, 
    - Get it to your iPhone however you like — email it to yourself, a notes/messaging app you have on both devices, etc. — then copy it on the phone. Delete the message afterwards; it's a credential.
 2. **Install [Scriptable](https://apps.apple.com/app/scriptable/id1405459188)** from the App Store.
 3. **Create the script.** In Scriptable, tap **+**, paste the contents of [`claude-usage.js`](claude-usage.js), and name it `claude-usage`.
-4. **Run it once** (tap the play button). Choose **paste credentials**, then **read clipboard**. You should see "saved". Use **test fetch** to confirm it works.
+4. **Run it once** (tap the play button). Choose **paste credentials**, then **read clipboard**. You should see "saved". Use **show usage** to confirm it works.
 5. **Add the widget.** Long-press the home screen → **Edit** → **Add Widget** → search "Scriptable" → pick the small (or medium) size → tap the widget → set **Script** to `claude-usage`.
 
 That's it. The widget refreshes in the background (iOS controls the exact cadence, typically every 15–30 minutes).
