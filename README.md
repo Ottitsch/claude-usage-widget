@@ -1,3 +1,5 @@
+<img width="556" height="288" alt="usage" src="https://github.com/user-attachments/assets/878aed73-09df-42cc-9cce-264622a1f343" />  
+
 # claude usage widget
 
 An iPhone home screen widget for [Scriptable](https://scriptable.app) (free) that shows your Claude usage at a glance:
