@@ -326,6 +326,7 @@ function addCenteredText(stack, text, font, color) {
   row.layoutHorizontally();
   row.addSpacer();
   const t = row.addText(text);
+  t.centerAlignText();
   t.font = font;
   t.textColor = color;
   t.lineLimit = 1;
