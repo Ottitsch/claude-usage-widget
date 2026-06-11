@@ -393,8 +393,6 @@ function sessionWidget(state) {
   if (win.resetsAt) {
     widget.addSpacer();
     addCenteredTimer(widget, win, 32);
-    widget.addSpacer(4);
-    addCenteredText(widget, `resets ${formatTime(win.resetsAt)}`, Font.mediumSystemFont(13), PALETTE.subtle);
   }
   widget.addSpacer();
   return widget;
@@ -422,9 +420,7 @@ function weekWidget(state) {
       addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(16), PALETTE.text);
     } else {
       widget.addSpacer();
-      addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(30), PALETTE.text);
-      widget.addSpacer(4);
-      addCenteredText(widget, `resets in ${formatCountdown(win.resetsAt)}`, Font.mediumSystemFont(13), PALETTE.subtle);
+      addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(36), PALETTE.text);
     }
   });
   widget.addSpacer();
