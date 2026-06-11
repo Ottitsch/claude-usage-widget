@@ -6,7 +6,7 @@ An iPhone home screen widget for [Scriptable](https://scriptable.app) (free) tha
 
 - **Session usage** — the rolling 5-hour window
 - **Weekly usage** — the 7-day window (plus the weekly Opus window if your plan has one)
-- **Time until reset** — countdown to the next window reset
+- **Time until reset** — live countdowns under each bar, ticking every second (rendered by iOS itself, so they stay exact even between widget refreshes)
 - **Color coding** — green → orange → red as you approach the limit
 - **Notifications** — a warning when usage crosses 90%, and an alert when a heavily-used window resets
 
@@ -50,9 +50,13 @@ Edit the `CONFIG` block at the top of the script:
 | `refreshMinutes` | `5` | requested widget refresh interval |
 | `tapAction` | `"refresh"` | what tapping the widget does: `"refresh"` shows a fresh usage readout, `"claude"` opens claude.ai |
 
+## Live countdowns
+
+The "resets in H:MM:SS" lines are timer elements that iOS renders and ticks itself — they're always second-exact, regardless of when the widget last refreshed, and they keep working even when the percentages are showing cached data. If a countdown passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bars above it are from the finished window.
+
 ## Tap to refresh
 
-iOS decides when the widget image redraws (typically every 15–30 minutes), so the displayed numbers can lag — especially right after a limit resets. Tapping the widget works around this: it opens Scriptable, fetches your usage live, and shows a popup with current session/week percentages and exact reset times. The fetch also updates the cache, so the widget image itself catches up on its next scheduled redraw.
+iOS decides when the widget image redraws (typically every 15–30 minutes), so the displayed percentages can lag — especially right after a limit resets. Tapping the widget works around this: it opens Scriptable, fetches your usage live, and shows a popup with current session/week percentages and exact reset times. The fetch also updates the cache, so the widget image itself catches up on its next scheduled redraw.
 
 ## Widget states
 

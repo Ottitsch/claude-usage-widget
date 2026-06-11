@@ -290,6 +290,23 @@ function addUsageRow(stack, label, win, barWidth) {
   img.imageSize = new Size(barWidth, 7);
 }
 
+// live countdown rendered by ios itself — ticks every second with no widget refresh
+function addCountdownRow(stack, win, fontSize = 9) {
+  if (!win || !win.resetsAt) return;
+  const row = stack.addStack();
+  row.layoutHorizontally();
+  row.centerAlignContent();
+  const label = row.addText("resets in ");
+  label.font = Font.systemFont(fontSize);
+  label.textColor = PALETTE.subtle;
+  const timer = row.addDate(win.resetsAt);
+  timer.applyTimerStyle();
+  timer.font = Font.mediumSystemFont(fontSize);
+  timer.textColor = PALETTE.subtle;
+  timer.lineLimit = 1;
+  timer.minimumScaleFactor = 0.6;
+}
+
 function newWidget() {
   const widget = new ListWidget();
   widget.backgroundColor = PALETTE.bg;
@@ -323,18 +340,16 @@ function smallWidget(state) {
   widget.addSpacer();
   if (data.session) {
     addUsageRow(widget, "session", data.session, 132);
-    widget.addSpacer(8);
+    widget.addSpacer(2);
+    addCountdownRow(widget, data.session);
+    widget.addSpacer(6);
   }
   if (data.week) {
     addUsageRow(widget, "week", data.week, 132);
+    widget.addSpacer(2);
+    addCountdownRow(widget, data.week);
   }
   widget.addSpacer();
-  const reset = data.session && data.session.resetsAt ? data.session.resetsAt : data.week && data.week.resetsAt;
-  if (reset) {
-    const f = widget.addText(`resets in ${formatCountdown(reset)}`);
-    f.font = Font.systemFont(9);
-    f.textColor = PALETTE.subtle;
-  }
   return widget;
 }
 
@@ -360,9 +375,7 @@ function mediumWidget(state) {
     addUsageRow(col, label, win, barWidth);
     if (win.resetsAt) {
       col.addSpacer(4);
-      const r = col.addText(`resets in ${formatCountdown(win.resetsAt)}`);
-      r.font = Font.systemFont(9);
-      r.textColor = PALETTE.subtle;
+      addCountdownRow(col, win);
     }
   });
   widget.addSpacer();
