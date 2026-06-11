@@ -52,7 +52,7 @@ Edit the `CONFIG` block at the top of the script:
 
 ## Reset times
 
-The session's "resets in H:MM:SS" line is a timer element that iOS renders and ticks itself — it's always second-exact, regardless of when the widget last refreshed, and it keeps working even when the percentages are showing cached data. If it passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bar above it is from the finished window.
+The big centered `H:MM:SS` countdown is a timer element that iOS renders and ticks itself — it's always second-exact, regardless of when the widget last refreshed, and it keeps working even when the percentages are showing cached data. If it passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bars are from the finished window.
 
 The weekly windows reset days out, so they show a static day + time instead (e.g. `resets fri 16:45`).
 

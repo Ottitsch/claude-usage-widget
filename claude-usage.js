@@ -298,7 +298,7 @@ function formatResetDate(date) {
 
 // "timer" = live countdown rendered by ios itself, ticks every second with no widget refresh
 // "date" = static weekday + time, for resets that are days away
-function addCountdownRow(stack, win, mode = "timer") {
+function addCountdownRow(stack, win, mode = "timer", size = 26) {
   if (!win || !win.resetsAt) return;
   const row = stack.addStack();
   row.layoutHorizontally();
@@ -311,15 +311,15 @@ function addCountdownRow(stack, win, mode = "timer") {
     t.minimumScaleFactor = 0.6;
     return;
   }
-  const label = row.addText("resets in ");
-  label.font = Font.systemFont(10);
-  label.textColor = PALETTE.subtle;
+  row.addSpacer();
   const timer = row.addDate(win.resetsAt);
   timer.applyTimerStyle();
-  timer.font = Font.semiboldSystemFont(15);
+  timer.centerAlignText();
+  timer.font = Font.boldSystemFont(size);
   timer.textColor = PALETTE.text;
   timer.lineLimit = 1;
-  timer.minimumScaleFactor = 0.6;
+  timer.minimumScaleFactor = 0.4;
+  row.addSpacer();
 }
 
 function newWidget() {
@@ -355,9 +355,13 @@ function smallWidget(state) {
   widget.addSpacer();
   if (data.session) {
     addUsageRow(widget, "session", data.session, 132);
-    widget.addSpacer(2);
-    addCountdownRow(widget, data.session);
-    widget.addSpacer(6);
+  }
+  if (data.session && data.session.resetsAt) {
+    widget.addSpacer(5);
+    addCountdownRow(widget, data.session, "timer", 26);
+    widget.addSpacer(5);
+  } else {
+    widget.addSpacer(8);
   }
   if (data.week) {
     addUsageRow(widget, "week", data.week, 132);
@@ -390,7 +394,7 @@ function mediumWidget(state) {
     addUsageRow(col, label, win, barWidth);
     if (win.resetsAt) {
       col.addSpacer(4);
-      addCountdownRow(col, win, mode);
+      addCountdownRow(col, win, mode, 20);
     }
   });
   widget.addSpacer();
