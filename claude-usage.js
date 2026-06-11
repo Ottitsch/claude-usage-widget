@@ -294,23 +294,25 @@ function addUsageRow(stack, label, win, barWidth) {
   img.imageSize = new Size(barWidth, 7);
 }
 
-// big live countdown beneath a bar, centered across the bar's full width.
-// the container has a fixed size and the timer fills it with center-aligned
-// text, which keeps it truly centered and stable as the digits change. huge
-// fonts auto-shrink to fit the box, so the layout never overflows.
-function addCenteredTimer(stack, win, width, fontSize, boxHeight = 0) {
+// big live countdown beneath a bar, centered in the widget. centered two ways
+// (flexible spacers around the element, center-aligned text within it) so it
+// stays centered no matter how much width ios gives the timer element. the
+// scale floor is high on purpose: ios pre-shrinks timer text to reserve room
+// for the widest possible time string, and a low floor lets it render tiny.
+function addCenteredTimer(stack, win, fontSize) {
   if (!win || !win.resetsAt) return;
-  const box = stack.addStack();
-  box.layoutHorizontally();
-  box.centerAlignContent();
-  box.size = new Size(width, boxHeight);
-  const timer = box.addDate(win.resetsAt);
+  const row = stack.addStack();
+  row.layoutHorizontally();
+  row.centerAlignContent();
+  row.addSpacer();
+  const timer = row.addDate(win.resetsAt);
   timer.applyTimerStyle();
   timer.centerAlignText();
   timer.font = Font.boldSystemFont(fontSize);
   timer.textColor = PALETTE.text;
   timer.lineLimit = 1;
-  timer.minimumScaleFactor = 0.2;
+  timer.minimumScaleFactor = 0.8;
+  row.addSpacer();
 }
 
 function formatResetDate(date) {
@@ -390,7 +392,7 @@ function sessionWidget(state) {
   addUsageRow(widget, "session", win, 132);
   if (win.resetsAt) {
     widget.addSpacer();
-    addCenteredTimer(widget, win, 132, 38, 0);
+    addCenteredTimer(widget, win, 32);
     widget.addSpacer(4);
     addCenteredText(widget, `resets ${formatTime(win.resetsAt)}`, Font.mediumSystemFont(13), PALETTE.subtle);
   }
@@ -439,7 +441,7 @@ function smallWidget(state) {
     addUsageRow(widget, "session", data.session, 132);
     if (data.session.resetsAt) {
       widget.addSpacer(4);
-      addCenteredTimer(widget, data.session, 132, 82, 40);
+      addCenteredTimer(widget, data.session, 26);
     }
     widget.addSpacer(8);
   }
@@ -475,7 +477,7 @@ function mediumWidget(state) {
       addUsageRow(col, label, win, barWidth);
       if (win.resetsAt) {
         col.addSpacer(4);
-        addCenteredTimer(col, win, barWidth, 18);
+        addCenteredTimer(col, win, 18);
       }
     } else {
       addUsageRow(col, label, win, barWidth);
