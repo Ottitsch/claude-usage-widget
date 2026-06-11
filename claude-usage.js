@@ -295,20 +295,22 @@ function addUsageRow(stack, label, win, barWidth) {
 }
 
 // big live countdown beneath a bar, centered across the bar's full width.
-// the container has a fixed width and the timer fills it with center-aligned
-// text, which keeps it truly centered and stable as the digits change.
-function addCenteredTimer(stack, win, width, fontSize) {
+// the container has a fixed size and the timer fills it with center-aligned
+// text, which keeps it truly centered and stable as the digits change. huge
+// fonts auto-shrink to fit the box, so the layout never overflows.
+function addCenteredTimer(stack, win, width, fontSize, boxHeight = 0) {
   if (!win || !win.resetsAt) return;
   const box = stack.addStack();
   box.layoutHorizontally();
-  box.size = new Size(width, 0);
+  box.centerAlignContent();
+  box.size = new Size(width, boxHeight);
   const timer = box.addDate(win.resetsAt);
   timer.applyTimerStyle();
   timer.centerAlignText();
   timer.font = Font.boldSystemFont(fontSize);
   timer.textColor = PALETTE.text;
   timer.lineLimit = 1;
-  timer.minimumScaleFactor = 0.4;
+  timer.minimumScaleFactor = 0.2;
 }
 
 function formatResetDate(date) {
@@ -354,15 +356,19 @@ function messageWidget(title, body) {
 function smallWidget(state) {
   const { data, fetchedAt, stale } = state;
   const widget = newWidget();
-  const header = widget.addText(stale ? `claude · as of ${formatTime(fetchedAt)}` : "claude");
-  header.font = Font.semiboldSystemFont(9);
-  header.textColor = PALETTE.subtle;
+  widget.setPadding(10, 14, 10, 14);
+  if (stale) {
+    const header = widget.addText(`as of ${formatTime(fetchedAt)}`);
+    header.font = Font.semiboldSystemFont(8);
+    header.textColor = PALETTE.subtle;
+    widget.addSpacer(2);
+  }
   widget.addSpacer();
   if (data.session) {
     addUsageRow(widget, "session", data.session, 132);
     if (data.session.resetsAt) {
-      widget.addSpacer(5);
-      addCenteredTimer(widget, data.session, 132, 26);
+      widget.addSpacer(4);
+      addCenteredTimer(widget, data.session, 132, 82, 40);
     }
     widget.addSpacer(8);
   }
