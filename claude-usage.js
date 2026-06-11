@@ -390,7 +390,7 @@ function sessionWidget(state) {
   addUsageRow(widget, "session", win, 132);
   if (win.resetsAt) {
     widget.addSpacer();
-    addCenteredTimer(widget, win, 132, 96, 60);
+    addCenteredTimer(widget, win, 132, 38, 0);
     widget.addSpacer(4);
     addCenteredText(widget, `resets ${formatTime(win.resetsAt)}`, Font.mediumSystemFont(13), PALETTE.subtle);
   }
@@ -409,13 +409,20 @@ function weekWidget(state) {
     ["week opus", data.weekOpus],
   ].filter(([, w]) => w);
   if (!wins.length) return messageWidget("no weekly data", "the usage endpoint returned no weekly window");
+  const compact = wins.length > 1;
   widget.addSpacer();
   wins.forEach(([label, win], i) => {
-    if (i > 0) widget.addSpacer(12);
+    if (i > 0) widget.addSpacer(10);
     addUsageRow(widget, label, win, 132);
-    if (win.resetsAt) {
+    if (!win.resetsAt) return;
+    if (compact) {
+      widget.addSpacer(3);
+      addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(16), PALETTE.text);
+    } else {
+      widget.addSpacer();
+      addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(30), PALETTE.text);
       widget.addSpacer(4);
-      addResetDateRow(widget, win, wins.length > 1 ? 13 : 16, true);
+      addCenteredText(widget, `resets in ${formatCountdown(win.resetsAt)}`, Font.mediumSystemFont(13), PALETTE.subtle);
     }
   });
   widget.addSpacer();
