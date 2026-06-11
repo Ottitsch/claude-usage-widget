@@ -330,7 +330,7 @@ function addCenteredText(stack, text, font, color) {
   t.font = font;
   t.textColor = color;
   t.lineLimit = 1;
-  t.minimumScaleFactor = 0.5;
+  t.minimumScaleFactor = 0.8;
   row.addSpacer();
 }
 
@@ -347,14 +347,6 @@ function addResetDateRow(stack, win, fontSize = 12, centered = false) {
   t.textColor = PALETTE.subtle;
   t.lineLimit = 1;
   t.minimumScaleFactor = 0.6;
-}
-
-function addStaleHeader(widget, stale, fetchedAt) {
-  if (!stale) return;
-  const header = widget.addText(`as of ${formatTime(fetchedAt)}`);
-  header.font = Font.semiboldSystemFont(8);
-  header.textColor = PALETTE.subtle;
-  widget.addSpacer(2);
 }
 
 function newWidget() {
@@ -381,12 +373,11 @@ function messageWidget(title, body) {
   return widget;
 }
 
-// dedicated session widget: bar + huge live countdown + reset clock time
+// dedicated session widget: bar + huge live countdown
 function sessionWidget(state) {
-  const { data, fetchedAt, stale } = state;
+  const { data } = state;
   const widget = newWidget();
   widget.setPadding(12, 14, 12, 14);
-  addStaleHeader(widget, stale, fetchedAt);
   const win = data.session;
   if (!win) return messageWidget("no session data", "the usage endpoint returned no 5-hour window");
   addUsageRow(widget, "session", win, 132);
@@ -400,10 +391,9 @@ function sessionWidget(state) {
 
 // dedicated weekly widget: week (+ opus) bars with reset day + time
 function weekWidget(state) {
-  const { data, fetchedAt, stale } = state;
+  const { data } = state;
   const widget = newWidget();
   widget.setPadding(12, 14, 12, 14);
-  addStaleHeader(widget, stale, fetchedAt);
   const wins = [
     ["week", data.week],
     ["week opus", data.weekOpus],
@@ -419,7 +409,7 @@ function weekWidget(state) {
       addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(16), PALETTE.text);
     } else {
       widget.addSpacer();
-      addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(36), PALETTE.text);
+      addCenteredText(widget, formatResetDate(win.resetsAt), Font.boldSystemFont(32), PALETTE.text);
     }
   });
   widget.addSpacer();
@@ -427,10 +417,9 @@ function weekWidget(state) {
 }
 
 function smallWidget(state) {
-  const { data, fetchedAt, stale } = state;
+  const { data } = state;
   const widget = newWidget();
   widget.setPadding(10, 14, 10, 14);
-  addStaleHeader(widget, stale, fetchedAt);
   widget.addSpacer();
   if (data.session) {
     addUsageRow(widget, "session", data.session, 132);
@@ -450,9 +439,9 @@ function smallWidget(state) {
 }
 
 function mediumWidget(state) {
-  const { data, fetchedAt, stale } = state;
+  const { data } = state;
   const widget = newWidget();
-  const header = widget.addText(stale ? `claude usage · as of ${formatTime(fetchedAt)}` : "claude usage");
+  const header = widget.addText("claude usage");
   header.font = Font.semiboldSystemFont(9);
   header.textColor = PALETTE.subtle;
   widget.addSpacer();

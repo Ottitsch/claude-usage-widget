@@ -69,7 +69,7 @@ iOS decides when the widget image redraws (typically every 15–30 minutes), so 
 
 - **setup needed** — no credentials stored yet; run the script in the app
 - **re-auth needed** — the refresh token stopped working; re-paste credentials from `~/.claude/.credentials.json`
-- **`as of 9:41`** line at the top — network was unreachable, showing the last cached numbers
+- when the network is unreachable, the widget silently shows the last cached numbers — tap it for a live readout if in doubt
 
 ## Troubleshooting
 
