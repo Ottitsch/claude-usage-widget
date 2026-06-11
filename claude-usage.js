@@ -389,7 +389,6 @@ function sessionWidget(state) {
   addStaleHeader(widget, stale, fetchedAt);
   const win = data.session;
   if (!win) return messageWidget("no session data", "the usage endpoint returned no 5-hour window");
-  widget.addSpacer();
   addUsageRow(widget, "session", win, 132);
   if (win.resetsAt) {
     widget.addSpacer();
@@ -411,7 +410,6 @@ function weekWidget(state) {
   ].filter(([, w]) => w);
   if (!wins.length) return messageWidget("no weekly data", "the usage endpoint returned no weekly window");
   const compact = wins.length > 1;
-  widget.addSpacer();
   wins.forEach(([label, win], i) => {
     if (i > 0) widget.addSpacer(10);
     addUsageRow(widget, label, win, 132);
