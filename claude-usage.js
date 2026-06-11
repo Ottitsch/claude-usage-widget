@@ -319,14 +319,39 @@ function formatResetDate(date) {
   return `${df.string(date).toLowerCase()} ${formatTime(date)}`;
 }
 
+function addCenteredText(stack, text, font, color) {
+  const row = stack.addStack();
+  row.layoutHorizontally();
+  row.addSpacer();
+  const t = row.addText(text);
+  t.font = font;
+  t.textColor = color;
+  t.lineLimit = 1;
+  t.minimumScaleFactor = 0.5;
+  row.addSpacer();
+}
+
 // static weekday + time, for resets that are days away
-function addResetDateRow(stack, win) {
+function addResetDateRow(stack, win, fontSize = 12, centered = false) {
   if (!win || !win.resetsAt) return;
-  const t = stack.addText(`resets ${formatResetDate(win.resetsAt)}`);
-  t.font = Font.mediumSystemFont(12);
+  const text = `resets ${formatResetDate(win.resetsAt)}`;
+  if (centered) {
+    addCenteredText(stack, text, Font.mediumSystemFont(fontSize), PALETTE.subtle);
+    return;
+  }
+  const t = stack.addText(text);
+  t.font = Font.mediumSystemFont(fontSize);
   t.textColor = PALETTE.subtle;
   t.lineLimit = 1;
   t.minimumScaleFactor = 0.6;
+}
+
+function addStaleHeader(widget, stale, fetchedAt) {
+  if (!stale) return;
+  const header = widget.addText(`as of ${formatTime(fetchedAt)}`);
+  header.font = Font.semiboldSystemFont(8);
+  header.textColor = PALETTE.subtle;
+  widget.addSpacer(2);
 }
 
 function newWidget() {
@@ -353,16 +378,55 @@ function messageWidget(title, body) {
   return widget;
 }
 
+// dedicated session widget: bar + huge live countdown + reset clock time
+function sessionWidget(state) {
+  const { data, fetchedAt, stale } = state;
+  const widget = newWidget();
+  widget.setPadding(12, 14, 12, 14);
+  addStaleHeader(widget, stale, fetchedAt);
+  const win = data.session;
+  if (!win) return messageWidget("no session data", "the usage endpoint returned no 5-hour window");
+  widget.addSpacer();
+  addUsageRow(widget, "session", win, 132);
+  if (win.resetsAt) {
+    widget.addSpacer();
+    addCenteredTimer(widget, win, 132, 96, 60);
+    widget.addSpacer(4);
+    addCenteredText(widget, `resets ${formatTime(win.resetsAt)}`, Font.mediumSystemFont(13), PALETTE.subtle);
+  }
+  widget.addSpacer();
+  return widget;
+}
+
+// dedicated weekly widget: week (+ opus) bars with reset day + time
+function weekWidget(state) {
+  const { data, fetchedAt, stale } = state;
+  const widget = newWidget();
+  widget.setPadding(12, 14, 12, 14);
+  addStaleHeader(widget, stale, fetchedAt);
+  const wins = [
+    ["week", data.week],
+    ["week opus", data.weekOpus],
+  ].filter(([, w]) => w);
+  if (!wins.length) return messageWidget("no weekly data", "the usage endpoint returned no weekly window");
+  widget.addSpacer();
+  wins.forEach(([label, win], i) => {
+    if (i > 0) widget.addSpacer(12);
+    addUsageRow(widget, label, win, 132);
+    if (win.resetsAt) {
+      widget.addSpacer(4);
+      addResetDateRow(widget, win, wins.length > 1 ? 13 : 16, true);
+    }
+  });
+  widget.addSpacer();
+  return widget;
+}
+
 function smallWidget(state) {
   const { data, fetchedAt, stale } = state;
   const widget = newWidget();
   widget.setPadding(10, 14, 10, 14);
-  if (stale) {
-    const header = widget.addText(`as of ${formatTime(fetchedAt)}`);
-    header.font = Font.semiboldSystemFont(8);
-    header.textColor = PALETTE.subtle;
-    widget.addSpacer(2);
-  }
+  addStaleHeader(widget, stale, fetchedAt);
   widget.addSpacer();
   if (data.session) {
     addUsageRow(widget, "session", data.session, 132);
@@ -418,8 +482,9 @@ function mediumWidget(state) {
   return widget;
 }
 
-async function buildWidget(family) {
+async function buildWidget(family, param) {
   family = family || config.widgetFamily || "small";
+  param = String(param != null ? param : args.widgetParameter || "").toLowerCase().trim();
   let state;
   try {
     state = await getUsage();
@@ -436,6 +501,8 @@ async function buildWidget(family) {
       return messageWidget("offline", "no connection and no cached usage yet");
     }
   }
+  if (param.startsWith("session")) return sessionWidget(state);
+  if (param.startsWith("week")) return weekWidget(state);
   return family === "medium" || family === "large" ? mediumWidget(state) : smallWidget(state);
 }
 
@@ -517,7 +584,9 @@ async function runApp() {
     menu.message = hasCreds ? "credentials stored ✓" : "no credentials stored yet — start with setup";
     menu.addAction(hasCreds ? "re-paste credentials" : "paste credentials");
     menu.addAction("show usage");
-    menu.addAction("preview small widget");
+    menu.addAction("preview session widget");
+    menu.addAction("preview week widget");
+    menu.addAction("preview combined small widget");
     menu.addAction("preview medium widget");
     menu.addDestructiveAction("clear stored data");
     menu.addCancelAction("done");
@@ -525,9 +594,11 @@ async function runApp() {
     if (choice === -1) break;
     if (choice === 0) await pasteCredentials();
     if (choice === 1) await showQuickStatus();
-    if (choice === 2) await (await buildWidget("small")).presentSmall();
-    if (choice === 3) await (await buildWidget("medium")).presentMedium();
-    if (choice === 4) {
+    if (choice === 2) await (await buildWidget("small", "session")).presentSmall();
+    if (choice === 3) await (await buildWidget("small", "week")).presentSmall();
+    if (choice === 4) await (await buildWidget("small", "")).presentSmall();
+    if (choice === 5) await (await buildWidget("medium", "")).presentMedium();
+    if (choice === 6) {
       clearKey(KEY_CREDS);
       clearKey(KEY_CACHE);
       clearKey(KEY_NOTIFIED);

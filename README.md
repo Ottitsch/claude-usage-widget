@@ -33,7 +33,12 @@ All credentials are stored in the iOS Keychain via Scriptable's `Keychain` API, 
 2. **Install [Scriptable](https://apps.apple.com/app/scriptable/id1405459188)** from the App Store.
 3. **Create the script.** In Scriptable, tap **+**, paste the contents of [`claude-usage.js`](claude-usage.js), and name it `claude-usage`.
 4. **Run it once** (tap the play button). Choose **paste credentials**, then **read clipboard**. You should see "saved". Use **show usage** to confirm it works.
-5. **Add the widget.** Long-press the home screen → **Edit** → **Add Widget** → search "Scriptable" → pick the small (or medium) size → tap the widget → set **Script** to `claude-usage`.
+5. **Add the widget(s).** Long-press the home screen → **Edit** → **Add Widget** → search "Scriptable" → pick the small (or medium) size → tap the widget → set **Script** to `claude-usage`. In the same configuration screen, set **Parameter** to choose the view:
+   - `session` — dedicated session widget: bar, huge live countdown, reset clock time
+   - `week` — dedicated weekly widget: week (+ weekly Opus) bars with reset day + time
+   - leave empty — combined view with everything on one widget
+
+   For the roomiest setup, add two small widgets side by side: one with `session`, one with `week`.
 
 That's it. The widget refreshes in the background (iOS controls the exact cadence, typically every 15–30 minutes).
 
