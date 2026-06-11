@@ -6,7 +6,7 @@ An iPhone home screen widget for [Scriptable](https://scriptable.app) (free) tha
 
 - **Session usage** — the rolling 5-hour window
 - **Weekly usage** — the 7-day window (plus the weekly Opus window if your plan has one)
-- **Time until reset** — a live countdown ticking every second under the session bar, and the reset day + time under the weekly bar
+- **Time until reset** — a big live countdown ticking every second, centered beneath the session bar, and the reset day + time under the weekly bar
 - **Color coding** — green → orange → red as you approach the limit
 - **Notifications** — a warning when usage crosses 90%, and an alert when a heavily-used window resets
 
@@ -52,7 +52,7 @@ Edit the `CONFIG` block at the top of the script:
 
 ## Reset times
 
-The big centered `H:MM:SS` countdown is a timer element that iOS renders and ticks itself — it's always second-exact, regardless of when the widget last refreshed, and it keeps working even when the percentages are showing cached data. If it passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bars are from the finished window.
+The big `H:MM:SS` countdown centered beneath the session bar is a timer element that iOS renders and ticks itself — it's always second-exact, regardless of when the widget last refreshed, and it keeps working even when the percentages are showing cached data. If it passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bars are from the finished window.
 
 The weekly windows reset days out, so they show a static day + time instead (e.g. `resets fri 16:45`).
 

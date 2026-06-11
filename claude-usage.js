@@ -274,7 +274,7 @@ function barImage(pct, width, height) {
   return ctx.getImage();
 }
 
-function addUsageRow(stack, label, win, barWidth) {
+function addUsageHeader(stack, label, win) {
   const head = stack.addStack();
   head.layoutHorizontally();
   head.centerAlignContent();
@@ -285,9 +285,30 @@ function addUsageRow(stack, label, win, barWidth) {
   const p = head.addText(`${Math.round(win.utilization)}%`);
   p.font = Font.semiboldSystemFont(11);
   p.textColor = colorFor(win.utilization);
+}
+
+function addUsageRow(stack, label, win, barWidth) {
+  addUsageHeader(stack, label, win);
   stack.addSpacer(3);
   const img = stack.addImage(barImage(win.utilization, barWidth, 7));
   img.imageSize = new Size(barWidth, 7);
+}
+
+// big live countdown beneath a bar, centered across the bar's full width.
+// the container has a fixed width and the timer fills it with center-aligned
+// text, which keeps it truly centered and stable as the digits change.
+function addCenteredTimer(stack, win, width, fontSize) {
+  if (!win || !win.resetsAt) return;
+  const box = stack.addStack();
+  box.layoutHorizontally();
+  box.size = new Size(width, 0);
+  const timer = box.addDate(win.resetsAt);
+  timer.applyTimerStyle();
+  timer.centerAlignText();
+  timer.font = Font.boldSystemFont(fontSize);
+  timer.textColor = PALETTE.text;
+  timer.lineLimit = 1;
+  timer.minimumScaleFactor = 0.4;
 }
 
 function formatResetDate(date) {
@@ -296,30 +317,14 @@ function formatResetDate(date) {
   return `${df.string(date).toLowerCase()} ${formatTime(date)}`;
 }
 
-// "timer" = live countdown rendered by ios itself, ticks every second with no widget refresh
-// "date" = static weekday + time, for resets that are days away
-function addCountdownRow(stack, win, mode = "timer", size = 26) {
+// static weekday + time, for resets that are days away
+function addResetDateRow(stack, win) {
   if (!win || !win.resetsAt) return;
-  const row = stack.addStack();
-  row.layoutHorizontally();
-  row.centerAlignContent();
-  if (mode === "date") {
-    const t = row.addText(`resets ${formatResetDate(win.resetsAt)}`);
-    t.font = Font.mediumSystemFont(12);
-    t.textColor = PALETTE.subtle;
-    t.lineLimit = 1;
-    t.minimumScaleFactor = 0.6;
-    return;
-  }
-  row.addSpacer();
-  const timer = row.addDate(win.resetsAt);
-  timer.applyTimerStyle();
-  timer.centerAlignText();
-  timer.font = Font.boldSystemFont(size);
-  timer.textColor = PALETTE.text;
-  timer.lineLimit = 1;
-  timer.minimumScaleFactor = 0.4;
-  row.addSpacer();
+  const t = stack.addText(`resets ${formatResetDate(win.resetsAt)}`);
+  t.font = Font.mediumSystemFont(12);
+  t.textColor = PALETTE.subtle;
+  t.lineLimit = 1;
+  t.minimumScaleFactor = 0.6;
 }
 
 function newWidget() {
@@ -355,18 +360,16 @@ function smallWidget(state) {
   widget.addSpacer();
   if (data.session) {
     addUsageRow(widget, "session", data.session, 132);
-  }
-  if (data.session && data.session.resetsAt) {
-    widget.addSpacer(5);
-    addCountdownRow(widget, data.session, "timer", 26);
-    widget.addSpacer(5);
-  } else {
+    if (data.session.resetsAt) {
+      widget.addSpacer(5);
+      addCenteredTimer(widget, data.session, 132, 26);
+    }
     widget.addSpacer(8);
   }
   if (data.week) {
     addUsageRow(widget, "week", data.week, 132);
     widget.addSpacer(2);
-    addCountdownRow(widget, data.week, "date");
+    addResetDateRow(widget, data.week);
   }
   widget.addSpacer();
   return widget;
@@ -391,10 +394,18 @@ function mediumWidget(state) {
     if (i > 0) row.addSpacer(14);
     const col = row.addStack();
     col.layoutVertically();
-    addUsageRow(col, label, win, barWidth);
-    if (win.resetsAt) {
-      col.addSpacer(4);
-      addCountdownRow(col, win, mode, 20);
+    if (mode === "timer") {
+      addUsageRow(col, label, win, barWidth);
+      if (win.resetsAt) {
+        col.addSpacer(4);
+        addCenteredTimer(col, win, barWidth, 18);
+      }
+    } else {
+      addUsageRow(col, label, win, barWidth);
+      if (win.resetsAt) {
+        col.addSpacer(4);
+        addResetDateRow(col, win);
+      }
     }
   });
   widget.addSpacer();
