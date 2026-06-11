@@ -298,26 +298,26 @@ function formatResetDate(date) {
 
 // "timer" = live countdown rendered by ios itself, ticks every second with no widget refresh
 // "date" = static weekday + time, for resets that are days away
-function addCountdownRow(stack, win, mode = "timer", fontSize = 9) {
+function addCountdownRow(stack, win, mode = "timer") {
   if (!win || !win.resetsAt) return;
   const row = stack.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
   if (mode === "date") {
     const t = row.addText(`resets ${formatResetDate(win.resetsAt)}`);
-    t.font = Font.systemFont(fontSize);
+    t.font = Font.mediumSystemFont(12);
     t.textColor = PALETTE.subtle;
     t.lineLimit = 1;
     t.minimumScaleFactor = 0.6;
     return;
   }
   const label = row.addText("resets in ");
-  label.font = Font.systemFont(fontSize);
+  label.font = Font.systemFont(10);
   label.textColor = PALETTE.subtle;
   const timer = row.addDate(win.resetsAt);
   timer.applyTimerStyle();
-  timer.font = Font.mediumSystemFont(fontSize);
-  timer.textColor = PALETTE.subtle;
+  timer.font = Font.semiboldSystemFont(15);
+  timer.textColor = PALETTE.text;
   timer.lineLimit = 1;
   timer.minimumScaleFactor = 0.6;
 }
