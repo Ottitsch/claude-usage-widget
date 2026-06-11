@@ -6,7 +6,7 @@ An iPhone home screen widget for [Scriptable](https://scriptable.app) (free) tha
 
 - **Session usage** — the rolling 5-hour window
 - **Weekly usage** — the 7-day window (plus the weekly Opus window if your plan has one)
-- **Time until reset** — live countdowns under each bar, ticking every second (rendered by iOS itself, so they stay exact even between widget refreshes)
+- **Time until reset** — a live countdown ticking every second under the session bar, and the reset day + time under the weekly bar
 - **Color coding** — green → orange → red as you approach the limit
 - **Notifications** — a warning when usage crosses 90%, and an alert when a heavily-used window resets
 
@@ -50,9 +50,11 @@ Edit the `CONFIG` block at the top of the script:
 | `refreshMinutes` | `5` | requested widget refresh interval |
 | `tapAction` | `"refresh"` | what tapping the widget does: `"refresh"` shows a fresh usage readout, `"claude"` opens claude.ai |
 
-## Live countdowns
+## Reset times
 
-The "resets in H:MM:SS" lines are timer elements that iOS renders and ticks itself — they're always second-exact, regardless of when the widget last refreshed, and they keep working even when the percentages are showing cached data. If a countdown passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bars above it are from the finished window.
+The session's "resets in H:MM:SS" line is a timer element that iOS renders and ticks itself — it's always second-exact, regardless of when the widget last refreshed, and it keeps working even when the percentages are showing cached data. If it passes zero before iOS redraws the widget, it counts *up* from the reset moment — a clear sign the bar above it is from the finished window.
+
+The weekly windows reset days out, so they show a static day + time instead (e.g. `resets fri 16:45`).
 
 ## Tap to refresh
 

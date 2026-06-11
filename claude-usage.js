@@ -290,12 +290,27 @@ function addUsageRow(stack, label, win, barWidth) {
   img.imageSize = new Size(barWidth, 7);
 }
 
-// live countdown rendered by ios itself — ticks every second with no widget refresh
-function addCountdownRow(stack, win, fontSize = 9) {
+function formatResetDate(date) {
+  const df = new DateFormatter();
+  df.dateFormat = "EEE";
+  return `${df.string(date).toLowerCase()} ${formatTime(date)}`;
+}
+
+// "timer" = live countdown rendered by ios itself, ticks every second with no widget refresh
+// "date" = static weekday + time, for resets that are days away
+function addCountdownRow(stack, win, mode = "timer", fontSize = 9) {
   if (!win || !win.resetsAt) return;
   const row = stack.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
+  if (mode === "date") {
+    const t = row.addText(`resets ${formatResetDate(win.resetsAt)}`);
+    t.font = Font.systemFont(fontSize);
+    t.textColor = PALETTE.subtle;
+    t.lineLimit = 1;
+    t.minimumScaleFactor = 0.6;
+    return;
+  }
   const label = row.addText("resets in ");
   label.font = Font.systemFont(fontSize);
   label.textColor = PALETTE.subtle;
@@ -347,7 +362,7 @@ function smallWidget(state) {
   if (data.week) {
     addUsageRow(widget, "week", data.week, 132);
     widget.addSpacer(2);
-    addCountdownRow(widget, data.week);
+    addCountdownRow(widget, data.week, "date");
   }
   widget.addSpacer();
   return widget;
@@ -363,19 +378,19 @@ function mediumWidget(state) {
   const row = widget.addStack();
   row.layoutHorizontally();
   const columns = [
-    ["session", data.session],
-    ["week", data.week],
-    ["week opus", data.weekOpus],
+    ["session", data.session, "timer"],
+    ["week", data.week, "date"],
+    ["week opus", data.weekOpus, "date"],
   ].filter(([, w]) => w);
   const barWidth = columns.length > 2 ? 84 : 124;
-  columns.forEach(([label, win], i) => {
+  columns.forEach(([label, win, mode], i) => {
     if (i > 0) row.addSpacer(14);
     const col = row.addStack();
     col.layoutVertically();
     addUsageRow(col, label, win, barWidth);
     if (win.resetsAt) {
       col.addSpacer(4);
-      addCountdownRow(col, win);
+      addCountdownRow(col, win, mode);
     }
   });
   widget.addSpacer();
