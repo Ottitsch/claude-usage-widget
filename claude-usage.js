@@ -11,7 +11,7 @@ const CONFIG = {
   warnAt: 60,           // % where bars turn orange
   dangerAt: 85,         // % where bars turn red
   notifyAt: 90,         // % that triggers a "near limit" notification (once per window)
-  resetNotifyAbove: 75, // schedule a "limit reset" notification if usage was above this %
+  resetNotifyAbove: 5, // schedule a "limit reset" notification if usage was above this %
   refreshMinutes: 5,    // requested widget refresh interval (iOS decides the real one)
   tapAction: "refresh", // "refresh" = tap shows fresh usage in scriptable, "claude" = tap opens claude.ai
 };
