@@ -4,7 +4,7 @@
 //
 // claude usage widget
 // shows session (5h) + weekly claude usage on the home screen.
-// auth: claude code oauth credentials (auto-refreshing).
+// auth: claude oauth — log in from the script itself (auto-refreshing tokens).
 // setup: run this script inside the scriptable app and follow the prompts.
 
 const CONFIG = {
@@ -19,6 +19,9 @@ const CONFIG = {
 const CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 const TOKEN_URL = "https://console.anthropic.com/v1/oauth/token";
 const USAGE_URL = "https://api.anthropic.com/api/oauth/usage";
+const AUTHORIZE_URL = "https://claude.ai/oauth/authorize";
+const REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback";
+const SCOPES = "org:create_api_key user:profile user:inference";
 
 const KEY_CREDS = "claude-usage-widget.creds";
 const KEY_CACHE = "claude-usage-widget.cache";
@@ -120,6 +123,142 @@ async function refreshTokens(creds) {
   creds.expiresAt = Date.now() + (res.json.expires_in || 3600) * 1000;
   saveKey(KEY_CREDS, creds);
   return creds;
+}
+
+// ---------- oauth login (pkce) ----------
+
+// scriptable has no crypto api, so pkce needs a self-contained sha-256.
+// verified against node crypto and the rfc 7636 test vector.
+function sha256Bytes(ascii) {
+  const K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+  ];
+  let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a,
+      h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+  const msg = [];
+  for (let i = 0; i < ascii.length; i++) msg.push(ascii.charCodeAt(i) & 0xff);
+  const bitLen = msg.length * 8;
+  msg.push(0x80);
+  while (msg.length % 64 !== 56) msg.push(0);
+  msg.push(0, 0, 0, 0, (bitLen >>> 24) & 0xff, (bitLen >>> 16) & 0xff, (bitLen >>> 8) & 0xff, bitLen & 0xff);
+  const w = new Array(64);
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let i = 0; i < msg.length; i += 64) {
+    for (let t = 0; t < 16; t++) {
+      w[t] = (msg[i + t * 4] << 24) | (msg[i + t * 4 + 1] << 16) | (msg[i + t * 4 + 2] << 8) | msg[i + t * 4 + 3];
+    }
+    for (let t = 16; t < 64; t++) {
+      const s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+      const s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+    }
+    let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+    for (let t = 0; t < 64; t++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K[t] + w[t]) | 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0;
+    h4 = (h4 + e) | 0; h5 = (h5 + f) | 0; h6 = (h6 + g) | 0; h7 = (h7 + h) | 0;
+  }
+  const out = [];
+  for (const x of [h0, h1, h2, h3, h4, h5, h6, h7]) {
+    out.push((x >>> 24) & 0xff, (x >>> 16) & 0xff, (x >>> 8) & 0xff, x & 0xff);
+  }
+  return out;
+}
+
+function base64url(bytes) {
+  const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i], b1 = bytes[i + 1], b2 = bytes[i + 2];
+    out += abc[b0 >> 2] + abc[((b0 & 3) << 4) | (b1 == null ? 0 : b1 >> 4)];
+    if (b1 != null) out += abc[((b1 & 15) << 2) | (b2 == null ? 0 : b2 >> 6)];
+    if (b2 != null) out += abc[b2 & 63];
+  }
+  return out;
+}
+
+// same authorization-code + pkce flow claude code uses to log in. with
+// code=true the callback page displays the authorization code for the user
+// to copy instead of needing a local http server to catch the redirect.
+async function oauthLogin() {
+  // uuids come from ios's csprng; two of them = 256 bits of verifier entropy
+  const verifier = (UUID.string() + UUID.string()).toLowerCase();
+  const state = UUID.string().toLowerCase();
+  const url =
+    `${AUTHORIZE_URL}?code=true&client_id=${CLIENT_ID}&response_type=code` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}` +
+    `&code_challenge=${base64url(sha256Bytes(verifier))}&code_challenge_method=S256&state=${state}`;
+
+  const intro = new Alert();
+  intro.title = "log in with claude";
+  intro.message =
+    "a browser sheet will open. log in to claude and approve access, then copy the code it shows and close the sheet to come back here.";
+  intro.addAction("open login page");
+  intro.addCancelAction("cancel");
+  if ((await intro.presentAlert()) === -1) return;
+
+  await Safari.openInApp(url, false);
+
+  const clip = (Pasteboard.paste() || "").trim();
+  const ask = new Alert();
+  ask.title = "authorization code";
+  ask.message = "paste the code from the browser (looks like xxxx#xxxx)";
+  ask.addTextField("code", /^[\w-]+#[\w-]+$/.test(clip) ? clip : "");
+  ask.addAction("continue");
+  ask.addCancelAction("cancel");
+  if ((await ask.presentAlert()) === -1) return;
+  const input = (ask.textFieldValue(0) || "").trim();
+  if (!input) {
+    await showInfo("no code", "nothing was entered — run login again and copy the code shown after approving.");
+    return;
+  }
+
+  const parts = input.split("#");
+  let res;
+  try {
+    res = await http(TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code: parts[0],
+        state: parts[1] || state,
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        code_verifier: verifier,
+      }),
+    });
+  } catch (e) {
+    await showInfo("login failed", `network error: ${e.message || e}`);
+    return;
+  }
+  if (res.status !== 200 || !res.json || !res.json.access_token) {
+    await showInfo(
+      "login failed",
+      `token exchange returned http ${res.status} — codes are single-use and expire fast, so try logging in again (or use paste credentials as a fallback)`
+    );
+    return;
+  }
+  saveKey(KEY_CREDS, {
+    accessToken: res.json.access_token,
+    refreshToken: res.json.refresh_token || null,
+    expiresAt: Date.now() + (res.json.expires_in || 3600) * 1000,
+  });
+  await showInfo("logged in", "credentials stored in the keychain. tokens will refresh automatically.");
 }
 
 // ---------- usage ----------
@@ -484,10 +623,10 @@ async function buildWidget(family, param) {
     await handleNotifications(state.data);
   } catch (e) {
     if (e.code === "SETUP") {
-      return messageWidget("setup needed", "open scriptable, run this script, and paste your claude credentials");
+      return messageWidget("setup needed", "open scriptable, run this script, and log in with claude");
     }
     if (e.code === "AUTH") {
-      return messageWidget("re-auth needed", "token refresh failed — re-paste credentials from .claude/.credentials.json");
+      return messageWidget("re-auth needed", "token refresh failed — run the script and log in with claude again");
     }
     state = loadCachedUsage();
     if (!state) {
@@ -536,7 +675,7 @@ async function showQuickStatus() {
     }
     note =
       e.code === "AUTH"
-        ? "token refresh failed — re-paste credentials"
+        ? "token refresh failed — log in again"
         : "offline — showing cached data";
   }
   const lines = [];
@@ -574,8 +713,9 @@ async function runApp() {
     const hasCreds = !!loadKey(KEY_CREDS);
     const menu = new Alert();
     menu.title = "claude usage widget";
-    menu.message = hasCreds ? "credentials stored ✓" : "no credentials stored yet — start with setup";
-    menu.addAction(hasCreds ? "re-paste credentials" : "paste credentials");
+    menu.message = hasCreds ? "credentials stored ✓" : "no credentials stored yet — start with log in";
+    menu.addAction(hasCreds ? "log in again with claude" : "log in with claude");
+    menu.addAction(hasCreds ? "re-paste credentials" : "paste credentials (from a computer)");
     menu.addAction("show usage");
     menu.addAction("preview session widget");
     menu.addAction("preview week widget");
@@ -585,13 +725,14 @@ async function runApp() {
     menu.addCancelAction("done");
     const choice = await menu.presentSheet();
     if (choice === -1) break;
-    if (choice === 0) await pasteCredentials();
-    if (choice === 1) await showQuickStatus();
-    if (choice === 2) await (await buildWidget("small", "session")).presentSmall();
-    if (choice === 3) await (await buildWidget("small", "week")).presentSmall();
-    if (choice === 4) await (await buildWidget("small", "")).presentSmall();
-    if (choice === 5) await (await buildWidget("medium", "")).presentMedium();
-    if (choice === 6) {
+    if (choice === 0) await oauthLogin();
+    if (choice === 1) await pasteCredentials();
+    if (choice === 2) await showQuickStatus();
+    if (choice === 3) await (await buildWidget("small", "session")).presentSmall();
+    if (choice === 4) await (await buildWidget("small", "week")).presentSmall();
+    if (choice === 5) await (await buildWidget("small", "")).presentSmall();
+    if (choice === 6) await (await buildWidget("medium", "")).presentMedium();
+    if (choice === 7) {
       clearKey(KEY_CREDS);
       clearKey(KEY_CACHE);
       clearKey(KEY_NOTIFIED);

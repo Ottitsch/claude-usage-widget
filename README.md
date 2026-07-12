@@ -14,26 +14,18 @@ No app to open, no server to run: one JavaScript file inside Scriptable, refresh
 
 ## How it works
 
-The widget calls the same usage endpoint that powers Claude Code's `/usage` command (`api.anthropic.com/api/oauth/usage`), authenticated with your Claude Code OAuth credentials. Access tokens expire after a few hours, but the stored **refresh token** lets the widget mint new ones automatically — so after a one-time setup there is no manual token maintenance.
+The widget calls the same usage endpoint that powers Claude Code's `/usage` command (`api.anthropic.com/api/oauth/usage`). You log in **directly on the phone** using the same OAuth flow Claude Code uses — no computer needed. Access tokens expire after a few hours, but the stored **refresh token** lets the widget mint new ones automatically — so after a one-time login there is no manual token maintenance.
 
 All credentials are stored in the iOS Keychain via Scriptable's `Keychain` API, never in the script file itself.
 
-## Setup (~3 minutes)
+## Setup (~2 minutes)
 
-**Prerequisite:** a Claude subscription (Pro/Max) that you've used to log in to Claude Code on any computer.
+**Prerequisite:** a Claude subscription (Pro/Max).
 
-1. **Get your credentials.** On the machine where Claude Code is logged in, copy the contents of the credentials file to your clipboard:
-   - **Windows:** in PowerShell run
-     ```powershell
-     Get-Content "$env:USERPROFILE\.claude\.credentials.json" -Raw | Set-Clipboard
-     ```
-     (the file is at `C:\Users\<you>\.claude\.credentials.json`; if you run Claude Code inside WSL, it's in your WSL home instead: `wsl cat ~/.claude/.credentials.json | clip`)
-   - **macOS/Linux:** `cat ~/.claude/.credentials.json | pbcopy` (or open the file and copy it)
-   - Get it to your iPhone however you like — email it to yourself, a notes/messaging app you have on both devices, etc. — then copy it on the phone. Delete the message afterwards; it's a credential.
-2. **Install [Scriptable](https://apps.apple.com/app/scriptable/id1405459188)** from the App Store.
-3. **Create the script.** In Scriptable, tap **+**, paste the contents of [`claude-usage.js`](claude-usage.js), and name it `claude-usage`.
-4. **Run it once** (tap the play button). Choose **paste credentials**, then **read clipboard**. You should see "saved". Use **show usage** to confirm it works.
-5. **Add the widget(s).** Long-press the home screen → **Edit** → **Add Widget** → search "Scriptable" → pick the small (or medium) size → tap the widget → set **Script** to `claude-usage`. In the same configuration screen, set **Parameter** to choose the view:
+1. **Install [Scriptable](https://apps.apple.com/app/scriptable/id1405459188)** from the App Store.
+2. **Create the script.** In Scriptable, tap **+**, paste the contents of [`claude-usage.js`](claude-usage.js), and name it `claude-usage`.
+3. **Log in.** Run the script (tap the play button) and choose **log in with claude**. A browser sheet opens: log in to your Claude account, approve access, tap **copy code** on the page that appears, then close the sheet. The script picks the code up from your clipboard — tap **continue** and you should see "logged in". Use **show usage** to confirm it works.
+4. **Add the widget(s).** Long-press the home screen → **Edit** → **Add Widget** → search "Scriptable" → pick the small (or medium) size → tap the widget → set **Script** to `claude-usage`. In the same configuration screen, set **Parameter** to choose the view:
    - `session` — dedicated session widget: bar, huge live countdown, reset clock time
    - `week` — dedicated weekly widget: week (+ weekly Opus) bars with reset day + time
    - leave empty — combined view with everything on one widget
@@ -41,6 +33,10 @@ All credentials are stored in the iOS Keychain via Scriptable's `Keychain` API, 
    For the roomiest setup, add two small widgets side by side: one with `session`, one with `week`.
 
 That's it. The widget refreshes in the background (iOS controls the exact cadence, typically every 15–30 minutes).
+
+### Alternative: paste credentials from a computer
+
+If the in-app login doesn't work for you, the old path still exists: on a machine where Claude Code is logged in, copy the contents of the credentials file (`~/.claude/.credentials.json` on macOS/Linux, `%USERPROFILE%\.claude\.credentials.json` on Windows — for WSL: `wsl cat ~/.claude/.credentials.json | clip`), get it to your phone, copy it there, then choose **paste credentials** in the script menu. Delete the message you sent yourself afterwards; it's a credential. Note that logging in on the phone is not just easier but also more robust: the widget gets its own token pair, independent of the one your desktop Claude Code rotates.
 
 ## Configuration
 
@@ -67,20 +63,21 @@ iOS decides when the widget image redraws (typically every 15–30 minutes), so 
 
 ## Widget states
 
-- **setup needed** — no credentials stored yet; run the script in the app
-- **re-auth needed** — the refresh token stopped working; re-paste credentials from `~/.claude/.credentials.json`
+- **setup needed** — no credentials stored yet; run the script in the app and log in
+- **re-auth needed** — the refresh token stopped working; run the script and log in again
 - when the network is unreachable, the widget silently shows the last cached numbers — tap it for a live readout if in doubt
 
 ## Troubleshooting
 
-- **"fetch failed: AUTH"** — your refresh token was rotated or revoked. Re-copy the credentials file (log in to Claude Code again if needed) and re-paste.
+- **"fetch failed: AUTH"** — your refresh token was rotated or revoked. Run the script and choose **log in with claude** again.
+- **"token exchange returned http 4xx" during login** — authorization codes are single-use and expire within minutes. Start the login again and paste the fresh code right away.
 - **Notifications don't appear** — allow notifications for Scriptable in iOS Settings, and note alerts only fire when the widget refreshes in the background.
 - **Widget feels stale** — iOS throttles widget refreshes; tap the widget for live numbers, and re-adding the widget forces a redraw.
 
 ## Caveats
 
 - The usage endpoint is **undocumented** and could change shape without notice; the widget fails soft (shows cached data) when it does.
-- Claude Code on your desktop refreshes the same credentials. If Anthropic ever invalidates old refresh tokens on rotation, the widget's copy may stop working and need a one-time re-paste.
+- If you used the **paste credentials** path, Claude Code on your desktop refreshes the same credentials — if Anthropic ever invalidates old refresh tokens on rotation, the widget's copy may stop working and need a re-paste. The in-app login doesn't have this problem: the widget holds its own tokens.
 
 ## Security note
 
